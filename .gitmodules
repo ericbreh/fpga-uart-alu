@@ -1,6 +1,3 @@
-[submodule "hw1/third_party/third_party/basejump_stl"]
-	path = hw1/third_party/third_party/basejump_stl
-	url = git@github.com:bespoke-silicon-group/basejump_stl.git
 [submodule "hw1/third_party/basejump_stl"]
 	path = hw1/third_party/basejump_stl
 	url = git@github.com:bespoke-silicon-group/basejump_stl.git
