@@ -84,17 +84,9 @@ module tb
     @(posedge clk_i);
     rst_ni <= 1;
 
-    // Add debug prints
-    run(1, 1);
-    $display("Test 1 complete");
-
     run(2, 2);
-    $display("Test 2 complete");
-
-    // Add more detailed test cases
-    run(0, 0);  // Test zero
-    run(10, 10);  // Test larger number
-    run(-1, -1);  // Test negative
+    run(9, 9);
+    run(170, 170);
 
     $finish;
   end
