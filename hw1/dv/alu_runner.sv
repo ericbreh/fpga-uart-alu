@@ -1,5 +1,5 @@
 
-module blinky_runner;
+module alu_runner;
 
 logic clk_i;
 logic rst_ni;
@@ -15,9 +15,9 @@ initial begin
     end
 end
 
-blinky #(
+alu #(
     .ResetValue(100)
-) blinky (.*);
+) alu (.*);
 
 always @(posedge led_o) $info("Led on");
 always @(negedge led_o) $info("Led off");

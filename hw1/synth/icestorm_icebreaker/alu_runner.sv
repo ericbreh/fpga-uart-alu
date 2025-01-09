@@ -1,5 +1,5 @@
 
-module blinky_runner;
+module alu_runner;
 
 reg CLK;
 reg BTN_N = 0;
