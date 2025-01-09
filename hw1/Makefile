@@ -1,5 +1,5 @@
 
-TOP := alu_tb
+TOP := tb
 
 export BASEJUMP_STL_DIR := $(abspath third_party/basejump_stl)
 export UART_DIR := $(abspath third_party/alexforencich_uart)
@@ -23,7 +23,7 @@ lint:
 	verilator lint/verilator.vlt -f rtl/rtl.f -f dv/dv.f --lint-only --top alu
 
 sim:
-	verilator lint/verilator.vlt --Mdir ${TOP}_$@_dir -f rtl/rtl.f -f dv/pre_synth.f -f dv/dv.f --binary -Wno-fatal --top ${TOP}
+	verilator lint/verilator.vlt --Mdir ${TOP}_$@_dir -f rtl/rtl.f -f dv/dv.f --binary -Wno-fatal --top ${TOP}
 	./${TOP}_$@_dir/V${TOP} +verilator+rand+reset+2
 
 synth/build/rtl.sv2v.v: ${RTL} rtl/rtl.f

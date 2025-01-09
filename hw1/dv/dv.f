@@ -1,7 +1,7 @@
 
 dv/dv_pkg.sv
 
-dv/alu_tb.sv
+dv/tb.sv
 
 --timing
 -j 0
