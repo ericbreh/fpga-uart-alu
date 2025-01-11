@@ -1,5 +1,5 @@
 module tb;
-  alu_runner runner();
+  alu_runner runner ();
   logic [7:0] sending;
   logic [7:0] received;
 

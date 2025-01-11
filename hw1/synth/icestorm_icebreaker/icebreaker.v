@@ -1,12 +1,10 @@
 module icebreaker (
     input  wire CLK,      // 12MHz clock input
     input  wire BTN_N,    // Reset button
+    input  wire RX,       // UART RX
+    output wire TX        // UART TX
 );
 
-    // Internal signals
-    logic [7:0] data_i, data_o;
-    logic ready_i, ready_o;
-    logic valid_i, valid_o;
     wire pll_clk;
 
     // PLL instance for 60MHz clock
@@ -19,7 +17,7 @@ module icebreaker (
     ) pll (
         .LOCK(),
         .RESETB(1'b1),
-        .BYPASS(1'b0)
+        .BYPASS(1'b0),
         .PACKAGEPIN(CLK),
         .PLLOUTCORE(pll_clk),
     );
@@ -28,12 +26,8 @@ module icebreaker (
     alu alu (
         .clk_i   (pll_clk),
         .rst_ni  (BTN_N),
-        .data_i  (data_i),
-        .ready_i (ready_i),
-        .valid_i (valid_i),
-        .ready_o (ready_o),
-        .valid_o (valid_o),
-        .data_o  (data_o)
+        .rxd_i   (RX),
+        .txd_o   (TX)
     );
 
 endmodule
