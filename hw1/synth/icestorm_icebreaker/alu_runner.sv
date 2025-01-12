@@ -1,7 +1,7 @@
 
 module alu_runner;
-  reg  CLK;
-  reg  BTN_N = 0;
+  reg   CLK;
+  reg   BTN_N = 0;
   logic RX;
   logic TX;
 
@@ -27,7 +27,7 @@ module alu_runner;
 
   task reset();
     BTN_N = 0;
-    RX  = 1;
+    RX = 1;
     repeat (5) @(posedge CLK);
     BTN_N = 1;
     repeat (5) @(posedge CLK);
@@ -65,28 +65,36 @@ module alu_runner;
       .prescale(65)
   );
 
+
   task send(input logic [7:0] data);
+    $display("Send: Starting transmission of 0x%h", data);
     test_tx_data  = data;
     test_tx_valid = 1;
     wait (test_tx_ready);
+    $display("Send: TX ready asserted");
     @(posedge CLK);
     test_tx_valid = 0;
 
-    // wait (!test_tx_ready);
-    // @(posedge clk_i);
+    wait (!test_tx_ready);
+    $display("Send: TX completed");
+    @(posedge CLK);
   endtask
 
   task receive(output logic [7:0] data);
+    $display("Receive: Waiting for data");
     test_rx_ready = 1;
     @(posedge CLK);
     wait (test_rx_valid);
+    $display("Receive: Data valid detected");
     @(posedge CLK);
     data = test_rx_data;
+    $display("Receive: Got data 0x%h", test_rx_data);
     @(posedge CLK);
     test_rx_ready = 0;
 
-    // wait (!test_rx_valid);
-    // @(posedge CLK);
+    wait (!test_rx_valid);
+    $display("Receive: Transaction complete");
+    @(posedge CLK);
   endtask
 
 endmodule

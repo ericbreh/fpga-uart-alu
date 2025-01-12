@@ -67,9 +67,6 @@ module alu_runner;
     wait (test_tx_ready);
     @(posedge clk_i);
     test_tx_valid = 0;
-
-    // wait (!test_tx_ready);
-    // @(posedge clk_i);
   endtask
 
   task receive(output logic [7:0] data);
@@ -80,9 +77,6 @@ module alu_runner;
     data = test_rx_data;
     @(posedge clk_i);
     test_rx_ready = 0;
-
-    // wait (!test_rx_valid);
-    // @(posedge clk_i);
   endtask
 
 endmodule
