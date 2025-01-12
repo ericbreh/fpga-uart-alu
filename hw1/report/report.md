@@ -4,6 +4,6 @@
 
 ### 3. 
 
-`2, 9, 170`
+`17, 10, 6, 64`
 
-![alt text](<Screenshot 2025-01-09 114942.png>)
+![alt text](image.png)

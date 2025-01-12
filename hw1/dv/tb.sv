@@ -4,6 +4,10 @@ module tb;
   logic [7:0] received;
 
   initial begin
+    $dumpfile("dump.fst");
+    $dumpvars;
+    $display("Begin simulation.");
+
     // Initialize
     runner.reset();
 
@@ -31,6 +35,7 @@ module tb;
     runner.receive(received);
     $display("Received data: %d", received);
 
+    $display("End simulation.");
     $finish();
   end
 endmodule
