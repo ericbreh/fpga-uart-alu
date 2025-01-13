@@ -5,7 +5,8 @@ module icebreaker (
     output wire TX        // UART TX
 );
 
-    wire pll_clk;
+    wire clk_12 = CLK;
+    wire clk_60;
 
     // PLL instance for 60MHz clock
     SB_PLL40_PAD #(
@@ -19,12 +20,12 @@ module icebreaker (
         .RESETB(1'b1),
         .BYPASS(1'b0),
         .PACKAGEPIN(CLK),
-        .PLLOUTCORE(pll_clk),
+        .PLLOUTCORE(clk_60),
     );
 
     // ALU instance
     alu alu (
-        .clk_i   (pll_clk),
+        .clk_i   (clk_60),
         .rst_ni  (BTN_N),
         .rxd_i   (RX),
         .txd_o   (TX)
