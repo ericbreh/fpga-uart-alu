@@ -1,8 +1,13 @@
 module alu_runner;
+
   logic clk_i;
   logic rst_ni;
   logic rxd_i;
   logic txd_o;
+
+  logic [7:0] data_to_send_i;
+  logic [7:0] data_received_o;
+  logic tx_ready_o, tx_valid_i, rx_ready_i, rx_valid_o;
 
   localparam realtime ClockPeriod = 5ms;
 
@@ -14,69 +19,60 @@ module alu_runner;
     end
   end
 
-  alu dut (
-      .clk_i,
-      .rst_ni,
-      .rxd_i,
-      .txd_o
-  );
+  alu alu (.*);
 
-  task reset();
-    rst_ni = 0;
-    rxd_i  = 1;
-    repeat (5) @(posedge clk_i);
-    rst_ni = 1;
-    repeat (5) @(posedge clk_i);
-  endtask
-
-  logic [7:0] test_tx_data;
-  logic test_tx_valid;
-  logic test_tx_ready;
-
-  logic [7:0] test_rx_data;
-  logic test_rx_valid;
-  logic test_rx_ready;
-
-  uart_tx test_tx (
+  uart_tx #(
+      .DATA_WIDTH(8)
+  ) uart_tx_inst (
       .clk(clk_i),
       .rst(!rst_ni),
-      .s_axis_tdata(test_tx_data),
-      .s_axis_tvalid(test_tx_valid),
-      .s_axis_tready(test_tx_ready),
+      .s_axis_tdata(data_to_send_i),
+      .s_axis_tready(tx_ready_o),
+      .s_axis_tvalid(tx_valid_i),
+      .prescale(65),
       .txd(rxd_i),
-      .busy(),
-      .prescale(65)
+      .busy()
   );
 
-  uart_rx test_rx (
+  uart_rx #(
+      .DATA_WIDTH(8)
+  ) uart_rx_inst (
       .clk(clk_i),
       .rst(!rst_ni),
-      .m_axis_tdata(test_rx_data),
-      .m_axis_tvalid(test_rx_valid),
-      .m_axis_tready(test_rx_ready),
+      .m_axis_tdata(data_received_o),
+      .m_axis_tready(rx_ready_i),
+      .m_axis_tvalid(rx_valid_o),
+      .prescale(65),
       .rxd(txd_o),
       .busy(),
-      .overrun_error(),
       .frame_error(),
-      .prescale(65)
+      .overrun_error()
   );
 
-  task send(input logic [7:0] data);
-    test_tx_data  = data;
-    test_tx_valid = 1;
-    wait (test_tx_ready);
+  task reset;
+    rst_ni = 0;
     @(posedge clk_i);
-    test_tx_valid = 0;
+    rst_ni = 1;
+  endtask
+
+  task send(input logic [7:0] data);
+    data_to_send_i = data;
+    tx_valid_i = 1;
+    wait (tx_ready_o);
+    @(posedge clk_i);
+    tx_valid_i = 0;
   endtask
 
   task receive(output logic [7:0] data);
-    test_rx_ready = 1;
+    rx_ready_i = 1;
     @(posedge clk_i);
-    wait (test_rx_valid);
+    wait (rx_valid_o);
     @(posedge clk_i);
-    data = test_rx_data;
+    data = data_received_o;
+
     @(posedge clk_i);
-    test_rx_ready = 0;
+    rx_ready_i = 0;
+
   endtask
 
 endmodule

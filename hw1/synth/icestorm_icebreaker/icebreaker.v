@@ -11,10 +11,10 @@ module icebreaker (
     // PLL instance for 60MHz clock
     SB_PLL40_PAD #(
         .FEEDBACK_PATH("SIMPLE"),
-        .DIVR(4'b0000),     // DIVR =  0
-        .DIVF(7'b1001111),  // DIVF = 79
-        .DIVQ(3'b100),      // DIVQ =  4
-        .FILTER_RANGE(3'b001)
+        .DIVR(4'd0),
+        .DIVF(7'd79),
+        .DIVQ(3'd4),
+        .FILTER_RANGE(3'd1)
     ) pll (
         .LOCK(),
         .RESETB(1'b1),
