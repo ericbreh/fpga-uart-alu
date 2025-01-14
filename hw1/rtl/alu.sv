@@ -15,17 +15,25 @@ module alu
   logic [15:0] byte_count_q, byte_count_d;
 
   logic tx_ready_o, tx_valid_i;
-  logic rx_ready_o, rx_valid_i;
-  logic [DATA_WIDTH-1:0] rx_data_i, tx_data_o;
+  logic rx_ready_i, rx_valid_o;
+  logic [DATA_WIDTH-1:0] rx_data_o, tx_data_i;
+
+  logic [7:0] opcode_q, opcode_d;
+
+  logic [31:0] accumulator_q, accumulator_d;  // For add operation
+  logic [31:0] current_number_q, current_number_d;  // Hold current 32-bit number being received
+  logic [1:0] number_byte_count_q, number_byte_count_d;  // Count bytes within each 32-bit number
+  logic [1:0] tx_byte_count_q, tx_byte_count_d;  // Count bytes being transmitted
+
 
   uart_rx #(
       .DATA_WIDTH(DATA_WIDTH)
   ) uart_rx (
       .clk(clk_i),
       .rst(!rst_ni),
-      .m_axis_tdata(rx_data_i),
-      .m_axis_tready(rx_ready_o),
-      .m_axis_tvalid(rx_valid_i),
+      .m_axis_tdata(rx_data_o),
+      .m_axis_tvalid(rx_valid_o),
+      .m_axis_tready(rx_ready_i),
       .prescale(44),
       .rxd(rxd_i),
       .busy(),
@@ -38,9 +46,9 @@ module alu
   ) uart_tx (
       .clk(clk_i),
       .rst(!rst_ni),
-      .s_axis_tdata(tx_data_o),
-      .s_axis_tready(tx_ready_o),
+      .s_axis_tdata(tx_data_i),
       .s_axis_tvalid(tx_valid_i),
+      .s_axis_tready(tx_ready_o),
       .prescale(44),
       .txd(txd_o),
       .busy()
@@ -52,10 +60,22 @@ module alu
       state_q <= IDLE;
       pkt_length_q <= '0;
       byte_count_q <= '0;
+
+      opcode_q <= '0;
+      accumulator_q <= '0;
+      current_number_q <= '0;
+      number_byte_count_q <= '0;
+      tx_byte_count_q <= '0;
     end else begin
       state_q <= state_d;
       pkt_length_q <= pkt_length_d;
       byte_count_q <= byte_count_d;
+
+      opcode_q <= opcode_d;
+      accumulator_q <= accumulator_d;
+      current_number_q <= current_number_d;
+      number_byte_count_q <= number_byte_count_d;
+      tx_byte_count_q <= tx_byte_count_d;
     end
   end
 
@@ -65,47 +85,117 @@ module alu
     pkt_length_d = pkt_length_q;
     byte_count_d = byte_count_q;
 
+    opcode_d = opcode_q;
+    accumulator_d = accumulator_q;
+    current_number_d = current_number_q;
+    number_byte_count_d = number_byte_count_q;
+    tx_byte_count_d = tx_byte_count_q;
+
     case (state_q)
       IDLE: begin
-        if (rx_valid_i) state_d = RX_OPCODE;
+        if (rx_valid_o) state_d = RX_OPCODE;
       end
 
       RX_OPCODE: begin
-        if (rx_valid_i && rx_data_i == 8'hEC) state_d = RX_RESERVED;
+        if (rx_valid_o) begin
+          opcode_d = rx_data_o;
+          state_d  = RX_RESERVED;
+        end
       end
 
       RX_RESERVED: begin
-        if (rx_valid_i) state_d = RX_LENGTH_LSB;
+        if (rx_valid_o) state_d = RX_LENGTH_LSB;
       end
 
       RX_LENGTH_LSB: begin
-        if (rx_valid_i) begin
+        if (rx_valid_o) begin
           state_d = RX_LENGTH_MSB;
-          pkt_length_d[7:0] = rx_data_i;
+          pkt_length_d[7:0] = rx_data_o;
         end
       end
 
       RX_LENGTH_MSB: begin
-        if (rx_valid_i) begin
-          state_d = RX_DATA;
-          pkt_length_d[15:8] = rx_data_i;
+        if (rx_valid_o) begin
+          state_d = (opcode_q == 8'hAD) ? ADD : ECHO;  // change this to add rest of states!!
+          pkt_length_d[15:8] = rx_data_o;
+          // set default values
           byte_count_d = '0;
+
+          accumulator_d = '0;
+          current_number_d = '0;
+          number_byte_count_d = '0;
+          tx_byte_count_d = '0;
         end
       end
 
-      RX_DATA: begin
-        if (rx_valid_i && rx_ready_o) begin
+      ECHO: begin
+        if (rx_valid_o && rx_ready_i) begin
           byte_count_d = byte_count_q + 1;
         end
         if (byte_count_q == pkt_length_q - 4)  // Header size is 4 bytes
           state_d = IDLE;
       end
+
+      ADD: begin
+        if (rx_valid_o && rx_ready_i) begin
+          byte_count_d = byte_count_q + 1;
+
+          // Build 32-bit number
+          current_number_d = (current_number_q << 8) | {24'b0, rx_data_o};
+          number_byte_count_d = number_byte_count_q + 1;
+
+          // When we have all 4 bytes of a number
+          if (number_byte_count_q == 2'd3) begin
+            number_byte_count_d = '0;
+            accumulator_d = accumulator_q + ((current_number_q << 8) | {24'b0, rx_data_o});
+            current_number_d = '0;
+          end
+        end
+        if (byte_count_q == pkt_length_q - 4)  // Header size is 4 bytes
+          state_d = TRANSMIT;
+      end
+
+      TRANSMIT: begin
+        if (tx_ready_o) begin
+          if (tx_byte_count_q == 2'd3) begin
+            tx_byte_count_d = '0;
+            state_d = IDLE;
+          end else begin
+            tx_byte_count_d = tx_byte_count_q + 1;
+          end
+        end
+      end
     endcase
   end
 
-  // TX data handling just echo back
-  assign tx_valid_i = (state_q == RX_DATA) && rx_valid_i;
-  assign tx_data_o  = rx_data_i;
-  assign rx_ready_o = (state_q != IDLE) && (state_q == RX_DATA ? tx_ready_o : 1'b1);
+  // TX data handling for both echo and add operations
+  always_comb begin
+    tx_valid_i = 0;
+    tx_data_i  = '0;
+
+    case (state_q)
+      ECHO: begin
+        tx_valid_i = rx_valid_o;
+        tx_data_i  = rx_data_o;
+      end
+      TRANSMIT: begin
+        tx_valid_i = 1'b1;
+        case (number_byte_count_q)
+          2'd0: tx_data_i = accumulator_q[7:0];
+          2'd1: tx_data_i = accumulator_q[15:8];
+          2'd2: tx_data_i = accumulator_q[23:16];
+          2'd3: tx_data_i = accumulator_q[31:24];
+        endcase
+      end
+      default: begin
+        tx_valid_i = 0;
+        tx_data_i  = '0;
+      end
+    endcase
+  end
+
+  // Ready signal generation - only need to check tx_ready_o for echo state
+  assign rx_ready_i = (state_q != IDLE) && (state_q == ECHO ? tx_ready_o : 1'b1);
+
 
 endmodule

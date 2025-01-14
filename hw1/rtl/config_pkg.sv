@@ -9,8 +9,9 @@ package config_pkg;
     RX_RESERVED,
     RX_LENGTH_LSB,
     RX_LENGTH_MSB,
-    RX_DATA,
-    TX_DATA
+    ECHO,
+    ADD,
+    TRANSMIT
   } state_t;
 
 endpackage

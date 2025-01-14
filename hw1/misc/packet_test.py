@@ -42,21 +42,14 @@ def main():
         b"Test Packet"
     ]
 
-    try:
-        while True:
-            for msg in test_msgs:
-                packet = create_packet(msg)
-                print(f"\nSending packet: {packet.hex()}")
-                print(f"Data: {msg}")
-                ser.write(packet)
-                time.sleep(1)
-            
-            time.sleep(2)
+    for msg in test_msgs:
+        packet = create_packet(msg)
+        print(f"\nSending packet: {packet.hex()}")
+        print(f"Data: {msg}")
+        ser.write(packet)
+        time.sleep(1)
 
-    except KeyboardInterrupt:
-        print("\nExiting...")
-    finally:
-        ser.close()
+    ser.close()
 
 if __name__ == "__main__":
     main()
