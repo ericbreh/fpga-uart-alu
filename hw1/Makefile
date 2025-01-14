@@ -50,6 +50,7 @@ synth/icestorm_icebreaker/build/icebreaker.asc: synth/icestorm_icebreaker/build/
 	 --package sg48 \
 	 --pre-pack synth/icestorm_icebreaker/nextpnr.py \
 	 --pcf synth/icestorm_icebreaker/netpnr.pcf \
+	 -r \
 	 --asc $@
 
 %.bit: %.asc

@@ -6,13 +6,13 @@ module icebreaker (
 );
 
     wire clk_12 = CLK;
-    wire clk_60;
+    wire clk_40.5;
 
     // PLL instance for 60MHz clock
     SB_PLL40_PAD #(
         .FEEDBACK_PATH("SIMPLE"),
         .DIVR(4'd0),
-        .DIVF(7'd79),
+        .DIVF(7'd53),
         .DIVQ(3'd4),
         .FILTER_RANGE(3'd1)
     ) pll (
@@ -20,12 +20,12 @@ module icebreaker (
         .RESETB(1'b1),
         .BYPASS(1'b0),
         .PACKAGEPIN(CLK),
-        .PLLOUTCORE(clk_60),
+        .PLLOUTCORE(clk_40.5),
     );
 
     // ALU instance
     alu alu (
-        .clk_i   (clk_60),
+        .clk_i   (clk_40.5),
         .rst_ni  (BTN_N),
         .rxd_i   (RX),
         .txd_o   (TX)
