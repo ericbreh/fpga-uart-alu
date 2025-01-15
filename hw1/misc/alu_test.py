@@ -1,87 +1,130 @@
 import serial
 import time
-from threading import Thread
 import struct
 
 # Opcodes
-OPCODE_ECHO = 0xEC
 OPCODE_ADD32 = 0xAD
-OPCODE_MUL32 = 0x1E
-OPCODE_DIV32 = 0xD1
 
 
 def create_packet(opcode: int, data: bytes) -> bytes:
-    packet_len = len(data) + 4  # data length + header size
+    packet_len = len(data) + 4
     header = bytes([
-        opcode,              # Operation opcode
-        0x00,               # Reserved
-        packet_len & 0xFF,  # Length LSB
-        packet_len >> 8     # Length MSB
+        opcode,
+        0x00,
+        packet_len & 0xFF,
+        packet_len >> 8
     ])
     return header + data
 
 
+def int_to_bytes(value: int) -> bytes:
+    """Convert any integer to 32-bit unsigned bytes in big-endian format"""
+    return (value & 0xFFFFFFFF).to_bytes(4, byteorder='big', signed=False)
+
+
 def add32(operands: list) -> bytes:
-    # Pack integers as little-endian 32-bit values
-    data = b''.join(struct.pack('<i', x) for x in operands)
+    # Convert each number to 32-bit unsigned bytes
+    data = b''.join(int_to_bytes(x) for x in operands)
     return create_packet(OPCODE_ADD32, data)
 
 
-def mul32(operands: list) -> bytes:
-    data = b''.join(struct.pack('<i', x) for x in operands)
-    return create_packet(OPCODE_MUL32, data)
+def receive_result(ser: serial.Serial) -> int:
+    result_bytes = ser.read(4)
+    result = int.from_bytes(result_bytes, byteorder='big', signed=False)
+    return result
 
 
-def div32(numerator: int, denominator: int) -> bytes:
-    data = struct.pack('<ii', numerator, denominator)
-    return create_packet(OPCODE_DIV32, data)
+def print_hex_bytes(data: bytes):
+    return ' '.join(f'{b:02x}' for b in data)
+
+
+def print_number_details(num: int):
+    """Print detailed representation of a number in different formats"""
+    signed_val = num if (num & 0x80000000) == 0 else num - 0x100000000
+    return (f"Decimal: {signed_val}, "
+            f"Hex: 0x{num & 0xFFFFFFFF:08x}, "
+            f"Binary: {num & 0xFFFFFFFF:032b}")
 
 
 def main():
-    # Open serial port
     ser = serial.Serial(
-        port='/dev/ttyUSB1',  # Adjust as needed
+        port='/dev/ttyUSB1',
         baudrate=115200,
         bytesize=serial.EIGHTBITS,
         parity=serial.PARITY_NONE,
         stopbits=serial.STOPBITS_ONE
     )
 
-    # Test arithmetic packets
-    test_msgs = [
-        b"Hello World!",
+    # Test cases focusing on negative numbers
+    add_tests = [
+        # Basic positive numbers
+        [1, 2],
+        [100, 200],
+
+        # Testing byte ordering
+        [0x12345678, 0x9ABCDEF0],
+
+        # Testing sign handling
+        [0x7FFFFFFF, 1],           # Max positive + 1
+        [0xFFFFFFFF, 1],           # -1 + 1 (if treated as signed)
+
+        # Testing overflow
+        [0x80000000, 0x80000000],  # Should result in 0 with overflow
+        [0xFFFFFFFF, 0xFFFFFFFF],  # Should result in 0xFFFFFFFE
+
+        # Multiple number addition
+        [0x11111111, 0x22222222, 0x33333333],
+        
+        # Basic negative number tests
+        [-1, 1],                    # -1 + 1 = 0
+        [-5, 5],                    # -5 + 5 = 0
+        [-10, -20],                 # -10 + -20 = -30
+
+        # Edge cases with negative numbers
+        [-2147483648, 0],           # INT32_MIN + 0
+        [-2147483648, 1],           # INT32_MIN + 1
+        [-2147483648, -1],          # INT32_MIN + (-1)
+
+        # Mixed positive and negative
+        [-1000000, 2000000],        # Mixed large numbers
+        [-1, -1, -1, -1],           # Multiple negatives
+        [2147483647, -1],           # INT32_MAX + (-1)
+
+        # Overflow cases
+        [-2147483648, -2147483648],  # INT32_MIN + INT32_MIN
+        [2147483647, -2147483648],  # INT32_MAX + INT32_MIN
+
+        # Additional edge cases
+        [0xFFFFFFFF, 0xFFFFFFFF],   # -1 + -1 = -2
+        [-2147483648, 2147483647],   # INT32_MIN + INT32_MAX
     ]
-    add_test = [7, 3]  # Should sum to 60
-    mul_test = [2, 3, 4]     # Should multiply to 24
-    div_test = (100, 5)      # Should divide to 20
 
+    for test in add_tests:
+        add_packet = add32(test)
 
-    # # Test echo packets
-    # for msg in test_msgs:
-    #     packet = create_packet(OPCODE_ECHO, msg)
-    #     print(f"\nSending echo packet: {packet.hex()}")
-    #     print(f"Data: {msg}")
-    #     ser.write(packet)
-    #     time.sleep(1)
+        # Calculate expected sum (both signed and unsigned interpretations)
+        masked_sum = sum(x & 0xFFFFFFFF for x in test) & 0xFFFFFFFF
+        signed_sum = masked_sum if (
+            masked_sum & 0x80000000) == 0 else masked_sum - 0x100000000
 
-    # Test arithmetic packets
-    add_packet = add32(add_test)
-    print(f"\nSending add packet: {add_packet.hex()}")
-    print(f"Add operands: {add_test}")
-    ser.write(add_packet)
-    time.sleep(1)
+        print("\nTest case:", [f'{x} (0x{x & 0xFFFFFFFF:08x})' for x in test])
+        print(f"Packet bytes:     {print_hex_bytes(add_packet)}")
+        print(f"Expected result:  {print_number_details(masked_sum)}")
 
-    # mul_packet = mul32(mul_test)
-    # print(f"\nSending multiply packet: {mul_packet.hex()}")
-    # print(f"Multiply operands: {mul_test}")
-    # ser.write(mul_packet)
-    # time.sleep(1)
+        # Send packet and receive result
+        ser.write(add_packet)
+        result = receive_result(ser)
 
-    # div_packet = div32(*div_test)
-    # print(f"\nSending divide packet: {div_packet.hex()}")
-    # print(f"Divide operands: {div_test}")
-    # ser.write(div_packet)
-    # time.sleep(1)
+        print(f"Received result:  {print_number_details(result)}")
+
+        # Show if results match
+        if result != masked_sum:
+            print("*** Results don't match! ***")
+            print(f"Expected bytes: {
+                  print_hex_bytes(int_to_bytes(masked_sum))}")
+            print(f"Received bytes: {print_hex_bytes(int_to_bytes(result))}")
+
+        time.sleep(0.1)
 
     ser.close()
 
