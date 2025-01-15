@@ -17,7 +17,7 @@ def receive_data(ser):
     while True:
         if ser.in_waiting:
             data = ser.read(ser.in_waiting)
-            print(f"Received: {data.hex()}")
+            print(f"Received: {data}")
         time.sleep(0.1)
 
 def main():

@@ -2,7 +2,6 @@
 
 package config_pkg;
 
-  // define structs and enums needed for design
   typedef enum logic [2:0] {
     IDLE,
     RX_OPCODE,
@@ -11,7 +10,14 @@ package config_pkg;
     RX_LENGTH_MSB,
     ECHO,
     ADD,
+    MUL,
+    MUL_WAIT,
     TRANSMIT
   } state_t;
+
+  parameter logic [7:0] OPCODE_ECHO = 8'hEC;
+  parameter logic [7:0] OPCODE_ADD  = 8'hAD;
+  parameter logic [7:0] OPCODE_MUL  = 8'h88;
+  parameter logic [7:0] OPCODE_DIV  = 8'hD1;
 
 endpackage

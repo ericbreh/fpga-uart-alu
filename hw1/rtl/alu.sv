@@ -24,6 +24,27 @@ module alu
   logic [1:0] number_byte_count_q, number_byte_count_d;
   logic [1:0] tx_byte_count_q, tx_byte_count_d;
 
+  // Add multiplier control signals
+  logic mul_v_i, mul_ready_and_o, mul_v_o, mul_yumi_i;
+  logic [31:0] mul_result_o;
+
+  bsg_imul_iterative #(
+      .width_p(32)
+  ) multiplier (
+      .clk_i(clk_i),
+      .reset_i(!rst_ni),
+      .v_i(mul_v_i),
+      .ready_and_o(mul_ready_and_o),
+      .opA_i(current_number_q),
+      .signed_opA_i(1'b1),
+      .opB_i(accumulator_q),
+      .signed_opB_i(1'b1),
+      .gets_high_part_i(1'b0),
+      .v_o(mul_v_o),
+      .result_o(mul_result_o),
+      .yumi_i(mul_yumi_i)
+  );
+
   uart_rx #(
       .DATA_WIDTH(DATA_WIDTH)
   ) uart_rx (
@@ -115,7 +136,13 @@ module alu
 
       RX_LENGTH_MSB: begin
         if (rx_valid_o) begin
-          state_d = (opcode_q == 8'hAD) ? ADD : ECHO;  // change this to add rest of states!!
+          case (opcode_q)
+            OPCODE_ECHO: state_d = ECHO;
+            OPCODE_ADD:  state_d = ADD;
+            OPCODE_MUL:  state_d = MUL;
+            // OPCODE_DIV:  state_d = DIV;
+            default:     state_d = IDLE;
+          endcase
           pkt_length_d[15:8] = rx_data_o;
           // set default values
           byte_count_d = '0;
@@ -152,6 +179,43 @@ module alu
         end
         if (byte_count_q == pkt_length_q - 4) state_d = TRANSMIT;
         tx_byte_count_d = '0;
+      end
+
+      MUL: begin
+        if (rx_valid_o && rx_ready_i) begin
+          byte_count_d = byte_count_q + 1;
+
+          // Build 32-bit number
+          current_number_d = (current_number_q << 8) | {24'b0, rx_data_o};
+          number_byte_count_d = number_byte_count_q + 1;
+
+          if (number_byte_count_q == 2'd3) begin
+            number_byte_count_d = '0;
+
+            // Start multiplication when we have a complete number
+            mul_v_i = 1'b1;
+            if (mul_ready_and_o) begin
+              if (accumulator_q == 0) begin
+                // First number, just store it
+                accumulator_d = current_number_d;
+              end else begin
+                // Wait for multiplication result
+                state_d = MUL_WAIT;
+              end
+              current_number_d = '0;
+            end
+          end
+        end
+        if (byte_count_q == pkt_length_q - 4) state_d = TRANSMIT;
+      end
+
+      // Add new state for multiplication
+      MUL_WAIT: begin
+        mul_yumi_i = mul_v_o;
+        if (mul_v_o) begin
+          accumulator_d = mul_result_o;
+          state_d = MUL;
+        end
       end
 
       TRANSMIT: begin
