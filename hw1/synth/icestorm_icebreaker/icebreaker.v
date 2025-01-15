@@ -6,26 +6,28 @@ module icebreaker (
 );
 
     wire clk_12 = CLK;
-    wire clk_40.5;
+    wire clk_30.5;
 
-    // PLL instance for 60MHz clock
+    // https://www.desmos.com/calculator/tbvv5cego6
+    // icepll -i 12 -o 30.5
+
     SB_PLL40_PAD #(
         .FEEDBACK_PATH("SIMPLE"),
         .DIVR(4'd0),
-        .DIVF(7'd53),
-        .DIVQ(3'd4),
+        .DIVF(7'd80),
+        .DIVQ(3'd5),
         .FILTER_RANGE(3'd1)
     ) pll (
         .LOCK(),
         .RESETB(1'b1),
         .BYPASS(1'b0),
         .PACKAGEPIN(CLK),
-        .PLLOUTCORE(clk_40.5),
+        .PLLOUTCORE(clk_30.5),
     );
 
     // ALU instance
     alu alu (
-        .clk_i   (clk_40.5),
+        .clk_i   (clk_30.5),
         .rst_ni  (BTN_N),
         .rxd_i   (RX),
         .txd_o   (TX)

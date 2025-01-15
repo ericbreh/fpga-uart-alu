@@ -38,7 +38,7 @@ module alu_runner;
       .s_axis_tdata(data_to_send_i),
       .s_axis_tready(tx_ready_o),
       .s_axis_tvalid(tx_valid_i),
-      .prescale(65),
+      .prescale(33),
       .txd(RX),
       .busy()
   );
@@ -51,7 +51,7 @@ module alu_runner;
       .m_axis_tdata(data_received_o),
       .m_axis_tready(rx_ready_i),
       .m_axis_tvalid(rx_valid_o),
-      .prescale(65),
+      .prescale(33),
       .rxd(TX),
       .busy(),
       .frame_error(),

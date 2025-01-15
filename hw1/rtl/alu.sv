@@ -25,7 +25,6 @@ module alu
   logic [1:0] number_byte_count_q, number_byte_count_d;  // Count bytes within each 32-bit number
   logic [1:0] tx_byte_count_q, tx_byte_count_d;  // Count bytes being transmitted
 
-
   uart_rx #(
       .DATA_WIDTH(DATA_WIDTH)
   ) uart_rx (
@@ -34,7 +33,7 @@ module alu
       .m_axis_tdata(rx_data_o),
       .m_axis_tvalid(rx_valid_o),
       .m_axis_tready(rx_ready_i),
-      .prescale(44),
+      .prescale(33),
       .rxd(rxd_i),
       .busy(),
       .frame_error(),
@@ -49,7 +48,7 @@ module alu
       .s_axis_tdata(tx_data_i),
       .s_axis_tvalid(tx_valid_i),
       .s_axis_tready(tx_ready_o),
-      .prescale(44),
+      .prescale(33),
       .txd(txd_o),
       .busy()
   );
@@ -91,6 +90,9 @@ module alu
     number_byte_count_d = number_byte_count_q;
     tx_byte_count_d = tx_byte_count_q;
 
+    tx_valid_i = 0;
+    tx_data_i = '0;
+
     case (state_q)
       IDLE: begin
         if (rx_valid_o) state_d = RX_OPCODE;
@@ -120,7 +122,6 @@ module alu
           pkt_length_d[15:8] = rx_data_o;
           // set default values
           byte_count_d = '0;
-
           accumulator_d = '0;
           current_number_d = '0;
           number_byte_count_d = '0;
@@ -129,6 +130,9 @@ module alu
       end
 
       ECHO: begin
+        tx_valid_i = rx_valid_o;
+        tx_data_i  = rx_data_o;
+
         if (rx_valid_o && rx_ready_i) begin
           byte_count_d = byte_count_q + 1;
         end
@@ -144,8 +148,7 @@ module alu
           current_number_d = (current_number_q << 8) | {24'b0, rx_data_o};
           number_byte_count_d = number_byte_count_q + 1;
 
-          // When we have all 4 bytes of a number
-          if (number_byte_count_q == 2'd3) begin
+          if (number_byte_count_q == 2'd3) begin  // should this be 2?
             number_byte_count_d = '0;
             accumulator_d = accumulator_q + ((current_number_q << 8) | {24'b0, rx_data_o});
             current_number_d = '0;
@@ -153,9 +156,18 @@ module alu
         end
         if (byte_count_q == pkt_length_q - 4)  // Header size is 4 bytes
           state_d = TRANSMIT;
+        tx_byte_count_d = '0;
       end
 
       TRANSMIT: begin
+        tx_valid_i = 1'b1;
+        case (tx_byte_count_q)
+          0: tx_data_i = accumulator_q[31:24];
+          1: tx_data_i = accumulator_q[23:16];
+          2: tx_data_i = accumulator_q[15:8];
+          3: tx_data_i = accumulator_q[7:0];
+        endcase
+
         if (tx_ready_o) begin
           if (tx_byte_count_q == 2'd3) begin
             tx_byte_count_d = '0;
@@ -168,34 +180,7 @@ module alu
     endcase
   end
 
-  // TX data handling for both echo and add operations
-  always_comb begin
-    tx_valid_i = 0;
-    tx_data_i  = '0;
-
-    case (state_q)
-      ECHO: begin
-        tx_valid_i = rx_valid_o;
-        tx_data_i  = rx_data_o;
-      end
-      TRANSMIT: begin
-        tx_valid_i = 1'b1;
-        case (number_byte_count_q)
-          2'd0: tx_data_i = accumulator_q[7:0];
-          2'd1: tx_data_i = accumulator_q[15:8];
-          2'd2: tx_data_i = accumulator_q[23:16];
-          2'd3: tx_data_i = accumulator_q[31:24];
-        endcase
-      end
-      default: begin
-        tx_valid_i = 0;
-        tx_data_i  = '0;
-      end
-    endcase
-  end
-
   // Ready signal generation - only need to check tx_ready_o for echo state
   assign rx_ready_i = (state_q != IDLE) && (state_q == ECHO ? tx_ready_o : 1'b1);
-
 
 endmodule

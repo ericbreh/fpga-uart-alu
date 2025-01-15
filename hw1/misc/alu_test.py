@@ -49,22 +49,20 @@ def main():
 
     # Test arithmetic packets
     test_msgs = [
-        b"Hi",
         b"Hello World!",
-        b"Test Packet"
     ]
-    add_test = [10, 20, 30]  # Should sum to 60
+    add_test = [2, 3]  # Should sum to 60
     mul_test = [2, 3, 4]     # Should multiply to 24
     div_test = (100, 5)      # Should divide to 20
 
 
-    # Test echo packets
-    for msg in test_msgs:
-        packet = create_packet(OPCODE_ECHO, msg)
-        print(f"\nSending echo packet: {packet.hex()}")
-        print(f"Data: {msg}")
-        ser.write(packet)
-        time.sleep(1)
+    # # Test echo packets
+    # for msg in test_msgs:
+    #     packet = create_packet(OPCODE_ECHO, msg)
+    #     print(f"\nSending echo packet: {packet.hex()}")
+    #     print(f"Data: {msg}")
+    #     ser.write(packet)
+    #     time.sleep(1)
 
     # Test arithmetic packets
     add_packet = add32(add_test)
@@ -73,17 +71,17 @@ def main():
     ser.write(add_packet)
     time.sleep(1)
 
-    mul_packet = mul32(mul_test)
-    print(f"\nSending multiply packet: {mul_packet.hex()}")
-    print(f"Multiply operands: {mul_test}")
-    ser.write(mul_packet)
-    time.sleep(1)
+    # mul_packet = mul32(mul_test)
+    # print(f"\nSending multiply packet: {mul_packet.hex()}")
+    # print(f"Multiply operands: {mul_test}")
+    # ser.write(mul_packet)
+    # time.sleep(1)
 
-    div_packet = div32(*div_test)
-    print(f"\nSending divide packet: {div_packet.hex()}")
-    print(f"Divide operands: {div_test}")
-    ser.write(div_packet)
-    time.sleep(1)
+    # div_packet = div32(*div_test)
+    # print(f"\nSending divide packet: {div_packet.hex()}")
+    # print(f"Divide operands: {div_test}")
+    # ser.write(div_packet)
+    # time.sleep(1)
 
     ser.close()
 
