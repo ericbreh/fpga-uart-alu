@@ -9,7 +9,6 @@ module alu
     output logic txd_o
 );
 
-  // State and control signals
   state_t state_q, state_d;
   logic [15:0] pkt_length_q, pkt_length_d;
   logic [15:0] byte_count_q, byte_count_d;
@@ -20,10 +19,10 @@ module alu
 
   logic [7:0] opcode_q, opcode_d;
 
-  logic [31:0] accumulator_q, accumulator_d;  // For add operation
-  logic [31:0] current_number_q, current_number_d;  // Hold current 32-bit number being received
-  logic [1:0] number_byte_count_q, number_byte_count_d;  // Count bytes within each 32-bit number
-  logic [1:0] tx_byte_count_q, tx_byte_count_d;  // Count bytes being transmitted
+  logic [31:0] accumulator_q, accumulator_d;
+  logic [31:0] current_number_q, current_number_d;
+  logic [1:0] number_byte_count_q, number_byte_count_d;
+  logic [1:0] tx_byte_count_q, tx_byte_count_d;
 
   uart_rx #(
       .DATA_WIDTH(DATA_WIDTH)
@@ -53,7 +52,6 @@ module alu
       .busy()
   );
 
-  // State machine sequential logic
   always_ff @(posedge clk_i) begin
     if (!rst_ni) begin
       state_q <= IDLE;
@@ -78,7 +76,6 @@ module alu
     end
   end
 
-  // State machine combinational logic
   always_comb begin
     state_d = state_q;
     pkt_length_d = pkt_length_q;
@@ -136,8 +133,7 @@ module alu
         if (rx_valid_o && rx_ready_i) begin
           byte_count_d = byte_count_q + 1;
         end
-        if (byte_count_q == pkt_length_q - 4)  // Header size is 4 bytes
-          state_d = IDLE;
+        if (byte_count_q == pkt_length_q - 4) state_d = IDLE;
       end
 
       ADD: begin
@@ -148,14 +144,13 @@ module alu
           current_number_d = (current_number_q << 8) | {24'b0, rx_data_o};
           number_byte_count_d = number_byte_count_q + 1;
 
-          if (number_byte_count_q == 2'd3) begin  // should this be 2?
+          if (number_byte_count_q == 2'd3) begin
             number_byte_count_d = '0;
             accumulator_d = accumulator_q + ((current_number_q << 8) | {24'b0, rx_data_o});
             current_number_d = '0;
           end
         end
-        if (byte_count_q == pkt_length_q - 4)  // Header size is 4 bytes
-          state_d = TRANSMIT;
+        if (byte_count_q == pkt_length_q - 4) state_d = TRANSMIT;
         tx_byte_count_d = '0;
       end
 
@@ -180,7 +175,6 @@ module alu
     endcase
   end
 
-  // Ready signal generation - only need to check tx_ready_o for echo state
   assign rx_ready_i = (state_q != IDLE) && (state_q == ECHO ? tx_ready_o : 1'b1);
 
 endmodule

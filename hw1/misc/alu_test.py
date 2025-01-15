@@ -51,7 +51,7 @@ def main():
     test_msgs = [
         b"Hello World!",
     ]
-    add_test = [2, 3]  # Should sum to 60
+    add_test = [7, 3]  # Should sum to 60
     mul_test = [2, 3, 4]     # Should multiply to 24
     div_test = (100, 5)      # Should divide to 20
 
