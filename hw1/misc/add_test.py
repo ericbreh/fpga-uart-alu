@@ -17,14 +17,10 @@ def create_packet(opcode: int, data: bytes) -> bytes:
     return header + data
 
 
-def int_to_bytes(value: int) -> bytes:
-    """Convert any integer to 32-bit unsigned bytes in big-endian format"""
-    return (value & 0xFFFFFFFF).to_bytes(4, byteorder='big', signed=False)
-
-
 def add32(operands: list) -> bytes:
-    # Convert each number to 32-bit unsigned bytes
-    data = b''.join(int_to_bytes(x) for x in operands)
+    # Directly convert integers to bytes in big-endian format
+    data = b''.join((x & 0xFFFFFFFF).to_bytes(
+        4, byteorder='big', signed=False) for x in operands)
     return create_packet(OPCODE_ADD32, data)
 
 
@@ -34,15 +30,14 @@ def receive_result(ser: serial.Serial) -> int:
     return result
 
 
-def print_hex_bytes(data: bytes):
-    return ' '.join(f'{b:02x}' for b in data)
-
-
-def print_number_details(num: int):
-    """Print detailed representation of a number in different formats"""
+def print_number(num: int) -> str:
+    """Print number in decimal, hex bytes, and binary formats"""
     signed_val = num if (num & 0x80000000) == 0 else num - 0x100000000
+    bytes_val = (num & 0xFFFFFFFF).to_bytes(4, byteorder='big', signed=False)
+    hex_bytes = ' '.join(f'{b:02x}' for b in bytes_val)
+
     return (f"Decimal: {signed_val}, "
-            f"Hex: 0x{num & 0xFFFFFFFF:08x}, "
+            f"Hex bytes: {hex_bytes}, "
             f"Binary: {num & 0xFFFFFFFF:032b}")
 
 
@@ -74,7 +69,7 @@ def main():
 
         # Multiple number addition
         [0x11111111, 0x22222222, 0x33333333],
-        
+
         # Basic negative number tests
         [-1, 1],                    # -1 + 1 = 0
         [-5, 5],                    # -5 + 5 = 0
@@ -97,34 +92,40 @@ def main():
         # Additional edge cases
         [0xFFFFFFFF, 0xFFFFFFFF],   # -1 + -1 = -2
         [-2147483648, 2147483647],   # INT32_MIN + INT32_MAX
+
+        # list(range(1, 16383)),
     ]
+
+    tests_passed = 0
+    total_tests = len(add_tests)
 
     for test in add_tests:
         add_packet = add32(test)
 
         # Calculate expected sum (both signed and unsigned interpretations)
         masked_sum = sum(x & 0xFFFFFFFF for x in test) & 0xFFFFFFFF
-        signed_sum = masked_sum if (
-            masked_sum & 0x80000000) == 0 else masked_sum - 0x100000000
 
         print("\nTest case:", [f'{x} (0x{x & 0xFFFFFFFF:08x})' for x in test])
-        print(f"Packet bytes:     {print_hex_bytes(add_packet)}")
-        print(f"Expected result:  {print_number_details(masked_sum)}")
+        print(f"Expected result:  {print_number(masked_sum)}")
 
         # Send packet and receive result
         ser.write(add_packet)
         result = receive_result(ser)
 
-        print(f"Received result:  {print_number_details(result)}")
+        print(f"Received result:  {print_number(result)}")
 
         # Show if results match
         if result != masked_sum:
-            print("*** Results don't match! ***")
-            print(f"Expected bytes: {
-                  print_hex_bytes(int_to_bytes(masked_sum))}")
-            print(f"Received bytes: {print_hex_bytes(int_to_bytes(result))}")
+            print(f"FAIL")
+        else:
+            print(f"PASS")
+            tests_passed += 1
 
         time.sleep(0.1)
+
+    print("\n=== Test Summary ===")
+    print(f"Tests passed: {
+          tests_passed}/{total_tests} ({(tests_passed/total_tests)*100:.1f}%)")
 
     ser.close()
 
