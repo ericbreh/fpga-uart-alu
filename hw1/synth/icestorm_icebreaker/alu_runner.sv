@@ -26,7 +26,7 @@ module alu_runner;
       pll_out = !pll_out;
     end
   end
-  assign icebreaker.pll.PLLOUTCORE = pll_out;
+  assign icebreaker.pll.PLLOUTGLOBAL = pll_out;
 
   icebreaker icebreaker (.*);
 

@@ -25,28 +25,24 @@ module alu
   logic [1:0] tx_byte_count_q, tx_byte_count_d;
 
   // Add multiplier control signals
-  logic mul_v_i, mul_ready_and_o, mul_v_o, mul_yumi_i;
+  logic mul_valid_i, mul_ready_o, mul_valid_o, mul_ready_i;
   logic [31:0] mul_result_o;
-
-  // State signals for mul
-  logic mul_v_q, mul_v_d;
-  logic mul_yumi_q, mul_yumi_d;
 
   bsg_imul_iterative #(
       .width_p(32)
   ) multiplier (
       .clk_i(clk_i),
       .reset_i(!rst_ni),
-      .v_i(mul_v_i),
-      .ready_and_o(mul_ready_and_o),
+      .v_i(mul_valid_i),
+      .ready_and_o(mul_ready_o),
       .opA_i(current_number_q),
       .signed_opA_i(1'b1),
       .opB_i(accumulator_q),
       .signed_opB_i(1'b1),
       .gets_high_part_i(1'b0),
-      .v_o(mul_v_o),
+      .v_o(mul_valid_o),
       .result_o(mul_result_o),
-      .yumi_i(mul_yumi_i)
+      .yumi_i(mul_ready_i)
   );
 
   uart_rx #(
@@ -87,8 +83,6 @@ module alu
       current_number_q <= '0;
       number_byte_count_q <= '0;
       tx_byte_count_q <= '0;
-      mul_v_q <= 1'b0;
-      mul_yumi_q <= 1'b0;
     end else begin
       state_q <= state_d;
       pkt_length_q <= pkt_length_d;
@@ -98,8 +92,6 @@ module alu
       current_number_q <= current_number_d;
       number_byte_count_q <= number_byte_count_d;
       tx_byte_count_q <= tx_byte_count_d;
-      mul_v_q <= mul_v_d;
-      mul_yumi_q <= mul_yumi_d;
     end
   end
 
@@ -114,8 +106,6 @@ module alu
     tx_byte_count_d = tx_byte_count_q;
     tx_valid_i = '0;
     tx_data_i = '0;
-    mul_v_d = 1'b0;
-    mul_yumi_d = 1'b0;
 
     case (state_q)
       IDLE: begin
@@ -203,12 +193,12 @@ module alu
           if (number_byte_count_q == 2'd3) begin
             number_byte_count_d = '0;
 
-            if (mul_ready_and_o) begin
+            if (mul_ready_o) begin
               if (accumulator_q == 0) begin
                 // First number, just store it
                 accumulator_d = current_number_d;
               end else begin
-                mul_v_d = 1'b1;
+                mul_valid_i = 1;
                 // Wait for multiplication result
                 state_d = MUL_WAIT;
               end
@@ -221,8 +211,8 @@ module alu
 
       // Add new state for multiplication
       MUL_WAIT: begin
-        mul_yumi_d = 1'b1;
-        if (mul_v_o) begin
+        mul_ready_i = 1'b1;
+        if (mul_valid_o) begin
           accumulator_d = mul_result_o;
           state_d = MUL;
         end
@@ -254,7 +244,5 @@ module alu
   end
 
   assign rx_ready_i = (state_q != IDLE) && (state_q == ECHO ? tx_ready_o : 1'b1);
-  assign mul_v_i = mul_v_q;
-  assign mul_yumi_i = mul_yumi_q;
 
 endmodule

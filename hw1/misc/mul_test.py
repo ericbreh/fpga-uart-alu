@@ -53,36 +53,36 @@ def main():
     mul_tests = [
         # Basic cases
         [1, 2],                     # 2
-        # [-1, 2],                    # -2
-        # [-1, -2],                   # 2
-        # [0, -5],                    # 0
+        [-1, 2],                    # -2
+        [-1, -2],                   # 2
+        [0, -5],                    # 0
 
-        # # Medium numbers
-        # [1000, -2000],             # -2,000,000
-        # [-4000, -3000],            # 12,000,000
-        # [0x7FFF, 0x7FFF],          # 32,767 * 32,767
+        # Medium numbers
+        [1000, -2000],             # -2,000,000
+        [-4000, -3000],            # 12,000,000
+        [0x7FFF, 0x7FFF],          # 32,767 * 32,767
 
-        # # Powers of 2
-        # [0x40000000, 2],           # 1,073,741,824 * 2
-        # [0x40000000, -2],          # 1,073,741,824 * -2
+        # Powers of 2
+        [0x40000000, 2],           # 1,073,741,824 * 2
+        [0x40000000, -2],          # 1,073,741,824 * -2
 
-        # # Edge cases
-        # [0x7FFFFFFF, 1],           # INT32_MAX * 1
-        # [-0x80000000, 1],          # INT32_MIN * 1
-        # [-0x80000000, -1],         # INT32_MIN * -1 (overflow)
-        # [0x7FFFFFFF, -1],          # INT32_MAX * -1
-        # [0x7FFFFFFF, 0x7FFFFFFF],  # INT32_MAX * INT32_MAX
-        # [-0x80000000, -0x80000000],  # INT32_MIN * INT32_MIN
+        # Edge cases
+        [0x7FFFFFFF, 1],           # INT32_MAX * 1
+        [-0x80000000, 1],          # INT32_MIN * 1
+        [-0x80000000, -1],         # INT32_MIN * -1 (overflow)
+        [0x7FFFFFFF, -1],          # INT32_MAX * -1
+        [0x7FFFFFFF, 0x7FFFFFFF],  # INT32_MAX * INT32_MAX
+        [-0x80000000, -0x80000000],  # INT32_MIN * INT32_MIN
 
-        # # Identity cases
-        # [1, 0],                    # Zero
-        # [-1, 0],                   # Zero
-        # [42, 1],                   # Identity
-        # [-42, 1],                  # Identity negative
+        # Identity cases
+        [1, 0],                    # Zero
+        [-1, 0],                   # Zero
+        [42, 1],                   # Identity
+        [-42, 1],                  # Identity negative
 
-        # # Near overflow cases
-        # [0x40000000, 2],          # Near overflow positive
-        # [-0x40000000, 2],         # Near overflow negative
+        # Near overflow cases
+        [0x40000000, 2],          # Near overflow positive
+        [-0x40000000, 2],         # Near overflow negative
     ]
 
     tests_passed = 0
@@ -104,16 +104,16 @@ def main():
 
         # Send packet and receive result
         ser.write(mul_packet)
-        # result = receive_result(ser)
+        result = receive_result(ser)
 
-        # print(f"Received result:  {print_number(result)}")
+        print(f"Received result:  {print_number(result)}")
 
-        # # Show if results match
-        # if result != product:
-        #     print(f"FAIL")
-        # else:
-        #     print(f"PASS")
-        #     tests_passed += 1
+        # Show if results match
+        if result != product:
+            print(f"FAIL")
+        else:
+            print(f"PASS")
+            tests_passed += 1
 
         time.sleep(0.1)
 

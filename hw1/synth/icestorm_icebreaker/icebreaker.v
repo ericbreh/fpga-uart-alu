@@ -22,7 +22,7 @@ module icebreaker (
         .RESETB(1'b1),
         .BYPASS(1'b0),
         .PACKAGEPIN(CLK),
-        .PLLOUTCORE(clk_30.5),
+        .PLLOUTGLOBAL(clk_30.5),
     );
 
     // ALU instance
