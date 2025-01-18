@@ -18,22 +18,22 @@ def create_packet(opcode: int, data: bytes) -> bytes:
 
 
 def add32(operands: list) -> bytes:
-    # Directly convert integers to bytes in big-endian format
+    # Convert integers to bytes in little-endian format
     data = b''.join((x & 0xFFFFFFFF).to_bytes(
-        4, byteorder='big', signed=False) for x in operands)
+        4, byteorder='little', signed=False) for x in operands)
     return create_packet(OPCODE_ADD32, data)
 
 
 def receive_result(ser: serial.Serial) -> int:
     result_bytes = ser.read(4)
-    result = int.from_bytes(result_bytes, byteorder='big', signed=False)
+    result = int.from_bytes(result_bytes, byteorder='little', signed=False)
     return result
 
 
 def print_number(num: int) -> str:
     """Print number in decimal, hex bytes, and binary formats"""
     signed_val = num if (num & 0x80000000) == 0 else num - 0x100000000
-    bytes_val = (num & 0xFFFFFFFF).to_bytes(4, byteorder='big', signed=False)
+    bytes_val = (num & 0xFFFFFFFF).to_bytes(4, byteorder='little', signed=False)
     hex_bytes = ' '.join(f'{b:02x}' for b in bytes_val)
 
     return (f"Decimal: {signed_val}, "

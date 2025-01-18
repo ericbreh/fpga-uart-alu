@@ -18,27 +18,49 @@ def create_packet(opcode: int, data: bytes) -> bytes:
 
 
 def mul32(operands: list) -> bytes:
-    # Directly convert integers to bytes in big-endian format
-    data = b''.join((x & 0xFFFFFFFF).to_bytes(
-        4, byteorder='big', signed=False) for x in operands)
+    # Convert each operand to a signed 32-bit integer
+    values = []
+    for x in operands:
+        if isinstance(x, str):
+            x = int(x.split()[0])
+        # Ensure the value is in signed 32-bit range
+        x = x & 0xFFFFFFFF
+        if x & 0x80000000:
+            x = x - 0x100000000
+        values.append(x)
+    
+    # Convert to little-endian bytes, handling negative numbers correctly
+    data = b''
+    for x in values:
+        # Convert to unsigned 32-bit for transmission
+        unsigned_x = x & 0xFFFFFFFF if x >= 0 else (abs(x) ^ 0xFFFFFFFF) + 1
+        data += unsigned_x.to_bytes(4, byteorder='little', signed=False)
     return create_packet(OPCODE_MUL32, data)
 
 
 def receive_result(ser: serial.Serial) -> int:
     result_bytes = ser.read(4)
-    result = int.from_bytes(result_bytes, byteorder='big', signed=False)
-    return result
+    # First interpret as unsigned
+    result = int.from_bytes(result_bytes, byteorder='little', signed=False)
+    # Convert to signed if necessary
+    if result & 0x80000000:
+        result = result - 0x100000000
+    return result & 0xFFFFFFFF
 
 
 def print_number(num: int) -> str:
     """Print number in decimal, hex bytes, and binary formats"""
+    # Ensure num is within 32-bit range and handle sign
+    num = num & 0xFFFFFFFF
     signed_val = num if (num & 0x80000000) == 0 else num - 0x100000000
-    bytes_val = (num & 0xFFFFFFFF).to_bytes(4, byteorder='big', signed=False)
+    
+    # Convert to bytes using unsigned conversion
+    bytes_val = num.to_bytes(4, byteorder='little', signed=False)
     hex_bytes = ' '.join(f'{b:02x}' for b in bytes_val)
 
     return (f"Decimal: {signed_val}, "
             f"Hex bytes: {hex_bytes}, "
-            f"Binary: {num & 0xFFFFFFFF:032b}")
+            f"Binary: {num:032b}")
 
 
 def main():
@@ -91,12 +113,21 @@ def main():
     for test in mul_tests:
         mul_packet = mul32(test)
 
+        # Initialize product as 32-bit signed value
         product = 1
         for x in test:
-            # Convert to signed 32-bit
+            # Handle string inputs
+            if isinstance(x, str):
+                x = int(x.split()[0])
+            
+            # Convert both numbers to signed 32-bit values
+            x = x & 0xFFFFFFFF
             x_signed = x if (x & 0x80000000) == 0 else x - 0x100000000
-            product_signed = product if (
-                product & 0x80000000) == 0 else product - 0x100000000
+            
+            product = product & 0xFFFFFFFF
+            product_signed = product if (product & 0x80000000) == 0 else product - 0x100000000
+            
+            # Perform signed multiplication and keep result in 32-bit range
             product = (product_signed * x_signed) & 0xFFFFFFFF
 
         print("\nTest case:", [f'{x} (0x{x & 0xFFFFFFFF:08x})' for x in test])

@@ -31,9 +31,9 @@ def main():
     )
 
     # Start receive thread
-    # rx_thread = Thread(target=receive_data, args=(ser,))
-    # rx_thread.daemon = True
-    # rx_thread.start()
+    rx_thread = Thread(target=receive_data, args=(ser,))
+    rx_thread.daemon = True
+    rx_thread.start()
 
     # Test packets
     test_msgs = [
