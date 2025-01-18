@@ -11,7 +11,7 @@ package config_pkg;
     RX_NUMBER,
     ADD,
     MUL,
-    // DIV,
+    DIV,
     ECHO,
     TRANSMIT
 

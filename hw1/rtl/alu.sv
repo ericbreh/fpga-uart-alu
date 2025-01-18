@@ -28,6 +28,10 @@ module alu
   logic mul_ready_i, mul_valid_o, mul_ready_o, mul_valid_i, mul_rst_ni;
   logic [4*DATA_WIDTH-1:0] mul_result_o;
 
+  // divider control signals
+  logic div_ready_i, div_valid_i, div_ready_o, div_valid_o;
+  logic [4*DATA_WIDTH-1:0] div_result_o;
+
   uart #(
       .DATA_WIDTH(DATA_WIDTH)
   ) uart (
@@ -48,25 +52,33 @@ module alu
       .rx_frame_error()
   );
 
-  bsg_imul_iterative #(
-      .width_p(4 * DATA_WIDTH)
-  ) multiplier (
+  bsg_imul_iterative multiplier (
       .clk_i(clk_i),
       .reset_i(!rst_ni || !mul_rst_ni),
       .v_i(mul_valid_i),
       .ready_and_o(mul_ready_o),
-
       .opA_i(accumulator_q),
       .signed_opA_i(1),
-
       .opB_i(current_number_q),
       .signed_opB_i(1),
-
       .gets_high_part_i(0),
-
       .v_o(mul_valid_o),
       .result_o(mul_result_o),
       .yumi_i(mul_ready_i)
+  );
+
+  bsg_idiv_iterative divider (
+      .clk_i(clk_i),
+      .reset_i(!rst_ni),
+      .v_i(div_valid_i),
+      .ready_and_o(div_ready_o),
+      .dividend_i(accumulator_q),
+      .divisor_i(current_number_q),
+      .signed_div_i(1),
+      .v_o(div_valid_o),
+      .quotient_o(div_result_o),
+      .remainder_o(),
+      .yumi_i(div_ready_i)
   );
 
   always_ff @(posedge clk_i) begin
@@ -113,7 +125,7 @@ module alu
 
       OPCODE: begin
         is_echo_d = 0;
-        if (rx_valid_o) begin
+        if (rx_valid_o) begin 
           // set future state and is_echo
           case (data_o)
             OPCODE_ECHO: begin
@@ -122,7 +134,8 @@ module alu
             end
             OPCODE_ADD: future_state_d = ADD;
             OPCODE_MUL: future_state_d = MUL;
-            // OPCODE_DIV:  future_state_d = DIV;
+            OPCODE_DIV: future_state_d = DIV;
+            default: future_state_d = OPCODE;
           endcase
           state_d = RESERVED;
         end
@@ -222,6 +235,29 @@ module alu
         // wait for data
         if (mul_valid_o) begin
           accumulator_d = mul_result_o;
+          // no more numbers
+          if (pkt_length_q == 'd4) begin
+            byte_counter_d = 0;
+            state_d = TRANSMIT;
+            // get next number
+          end else begin
+            byte_counter_d = 0;
+            state_d = RX_NUMBER;
+          end
+        end
+      end
+
+      DIV: begin
+        rx_ready_i  = 0;
+        div_ready_i = 1;
+        // byte counter will be 0 on first time in this state, flash valid once
+        if (div_ready_o && byte_counter_q == 'd0) begin
+          byte_counter_d = byte_counter_q + 1;
+          div_valid_i = 1;
+        end
+        // wait for data
+        if (div_valid_o) begin
+          accumulator_d = div_result_o;
           // no more numbers
           if (pkt_length_q == 'd4) begin
             byte_counter_d = 0;
