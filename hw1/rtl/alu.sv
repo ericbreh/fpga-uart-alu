@@ -25,12 +25,15 @@ module alu
   logic [DATA_WIDTH-1:0] data_i, data_o;
 
   // multiplier control signals
-  logic mul_ready_i, mul_valid_o, mul_ready_o, mul_valid_i, mul_rst_ni;
+  logic mul_ready_i, mul_valid_o, mul_ready_o, mul_valid_i;
   logic [4*DATA_WIDTH-1:0] mul_result_o;
 
   // divider control signals
   logic div_ready_i, div_valid_i, div_ready_o, div_valid_o;
   logic [4*DATA_WIDTH-1:0] div_result_o;
+
+  // reset signal
+  logic my_rst_ni;
 
   uart #(
       .DATA_WIDTH(DATA_WIDTH)
@@ -54,7 +57,7 @@ module alu
 
   bsg_imul_iterative multiplier (
       .clk_i(clk_i),
-      .reset_i(!rst_ni || !mul_rst_ni),
+      .reset_i(!rst_ni || !my_rst_ni),
       .v_i(mul_valid_i),
       .ready_and_o(mul_ready_o),
       .opA_i(accumulator_q),
@@ -69,7 +72,7 @@ module alu
 
   bsg_idiv_iterative divider (
       .clk_i(clk_i),
-      .reset_i(!rst_ni),
+      .reset_i(!rst_ni || !my_rst_ni),
       .v_i(div_valid_i),
       .ready_and_o(div_ready_o),
       .dividend_i(accumulator_q),
@@ -119,13 +122,13 @@ module alu
     // multiplier
     mul_ready_i = 0;
     mul_valid_i = 0;
-    mul_rst_ni = 1;
+    my_rst_ni = 1;
 
     unique case (state_q)
 
       OPCODE: begin
         is_echo_d = 0;
-        if (rx_valid_o) begin 
+        if (rx_valid_o) begin
           // set future state and is_echo
           case (data_o)
             OPCODE_ECHO: begin
@@ -194,7 +197,7 @@ module alu
       end
 
       RX_NUMBER: begin
-        mul_rst_ni = 0;
+        my_rst_ni = 0;
 
         if (rx_valid_o) begin
           byte_counter_d = byte_counter_q + 1;
@@ -235,13 +238,12 @@ module alu
         // wait for data
         if (mul_valid_o) begin
           accumulator_d = mul_result_o;
+          byte_counter_d = 0;
           // no more numbers
           if (pkt_length_q == 'd4) begin
-            byte_counter_d = 0;
             state_d = TRANSMIT;
             // get next number
           end else begin
-            byte_counter_d = 0;
             state_d = RX_NUMBER;
           end
         end
@@ -258,15 +260,8 @@ module alu
         // wait for data
         if (div_valid_o) begin
           accumulator_d = div_result_o;
-          // no more numbers
-          if (pkt_length_q == 'd4) begin
-            byte_counter_d = 0;
-            state_d = TRANSMIT;
-            // get next number
-          end else begin
-            byte_counter_d = 0;
-            state_d = RX_NUMBER;
-          end
+          byte_counter_d = 0;
+          state_d = TRANSMIT;
         end
       end
 

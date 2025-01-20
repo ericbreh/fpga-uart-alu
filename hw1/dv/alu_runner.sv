@@ -49,27 +49,25 @@ module alu_runner;
       .overrun_error()
   );
 
-  task reset;
+  task automatic reset;
     rst_ni = 0;
     @(posedge clk_i);
     rst_ni = 1;
   endtask
 
-  task send(input logic [7:0] data);
+  task automatic send(input logic [7:0] data);
+    @(posedge clk_i);
+    while (!tx_ready_o) @(posedge clk_i);
     data_to_send_i = data;
     tx_valid_i = 1;
-    wait (tx_ready_o);
     @(posedge clk_i);
     tx_valid_i = 0;
   endtask
 
-  task receive(output logic [7:0] data);
+  task automatic receive(output logic [7:0] data);
+    while (!rx_valid_o) @(posedge clk_i);
     rx_ready_i = 1;
-    @(posedge clk_i);
-    wait (rx_valid_o);
-    @(posedge clk_i);
     data = data_received_o;
-
     @(posedge clk_i);
     rx_ready_i = 0;
   endtask

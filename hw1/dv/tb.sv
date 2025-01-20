@@ -61,13 +61,13 @@ module tb;
     // Send header
     foreach (header[i]) begin
       runner.send(header[i]);
-      $display("Sent: %h", header[i]);
+      // $display("Sent: %h", header[i]);
     end
 
     // Send data
     foreach (data[i]) begin
       runner.send(data[i]);
-      $display("Sent: %h", data[i]);
+      // $display("Sent: %h", data[i]);
     end
   endtask
 
@@ -75,29 +75,32 @@ module tb;
     logic [7:0] bytes[4];
     foreach (bytes[i]) begin
       runner.receive(bytes[i]);
+      // $display("Received byte: %h", bytes[i]);
     end
-    result = {bytes[0], bytes[1], bytes[2], bytes[3]};
+    result = {bytes[3], bytes[2], bytes[1], bytes[0]};
   endtask
 
-  task automatic test_math(input logic [7:0] opcode, input logic [31:0] operands[],
-                           input logic [31:0] expected);
+  task automatic test_math(input logic [7:0] opcode, input logic [31:0] operands[2],
+                         input int num_operands, input logic [31:0] expected);
     logic [7:0] data[];
     logic [31:0] result;
     logic [15:0] packet_len;
 
     // Convert 32-bit operands to byte array
-    data = new[operands.size() * 4];
-    foreach (operands[i]) begin
-      data[i*4+0] = operands[i][31:24];
-      data[i*4+1] = operands[i][23:16];
-      data[i*4+2] = operands[i][15:8];
-      data[i*4+3] = operands[i][7:0];
+    data = new[num_operands * 4];
+    for (int i = 0; i < num_operands; i++) begin
+      data[i*4+3] = operands[i][31:24];
+      data[i*4+2] = operands[i][23:16];
+      data[i*4+1] = operands[i][15:8];
+      data[i*4+0] = operands[i][7:0];
     end
 
     // Calculate packet length
     packet_len = 16'd4 + 16'(data.size());
 
-    $display("Operands: %p", operands);
+    $display("Operands: ");
+    for (int i = 0; i < num_operands; i++)
+      $display("[%0d] = %0d (0x%0h)", i, $signed(operands[i]), operands[i]);
     $display("Expected: %0d (0x%0h)", $signed(expected), expected);
 
     send_packet(opcode, packet_len, data);
@@ -112,30 +115,64 @@ module tb;
     end
   endtask
 
+  task automatic random_echo(input int num_tests);
+    string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    string message;
+    int length;
+    
+    for (int test = 0; test < num_tests; test++) begin
+      length = $urandom_range(1, 100); // Random message length between 1-100
+      message = "";
+      for (int i = 0; i < length; i++) begin
+        message = {message, string'(chars[$urandom_range(0, chars.len()-1)])};
+      end
+      test_echo(message);
+    end
+  endtask
+
+  task automatic random_math(input logic [7:0] opcode, input int num_tests);
+    logic [31:0] operands[2];
+    logic [31:0] expected;
+    
+    for (int test = 0; test < num_tests; test++) begin
+      operands[0] = $urandom();
+      operands[1] = $urandom();
+      
+      case (opcode)
+        OPCODE_ADD: expected = operands[0] + operands[1];
+        OPCODE_MUL: expected = operands[0] * operands[1];
+        OPCODE_DIV: begin
+          if (operands[1] == 0) operands[1] = 1;
+          expected = operands[0] / operands[1];
+        end
+      endcase
+      
+      test_math(opcode, operands, 2, expected);
+    end
+  endtask
+
   initial begin
     $dumpfile("dump.fst");
     $dumpvars;
 
     runner.reset();
 
-    // Test ECHO
-    // test_echo(1);
     test_echo("Hello, World!");
+    test_math(OPCODE_ADD, '{32'h1, 32'h2}, 2, 32'h3);
+    test_math(OPCODE_MUL, '{32'h2, 32'h3}, 2, 32'h6);
+    test_math(OPCODE_DIV, '{32'h6, 32'h2}, 2, 32'h3);
 
-    // Test ADD
-    test_math(OPCODE_ADD, '{32'h1, 32'h2}, 32'h3);
-    // test_math(OPCODE_ADD, '{32'hFFFFFFFF, 32'h1}, 32'h0);
-    // test_math(OPCODE_ADD, '{32'h1, 32'h2, 32'h3}, 32'h6);
-
-    // // Test MUL
-    // test_math(OPCODE_MUL, '{32'h2, 32'h3}, 32'h6);
-    // test_math(OPCODE_MUL, '{32'hFFFFFFFF, 32'h2}, 32'hFFFFFFFE);
-    // test_math(OPCODE_MUL, '{32'h2, 32'h3, 32'h4}, 32'h18);
-
-    // // Test DIV
-    // test_math(OPCODE_DIV, '{32'h6, 32'h2}, 32'h3);
-    // test_math(OPCODE_DIV, '{32'hFFFFFFFC, 32'h2}, 32'hFFFFFFFE);
-    // test_math(OPCODE_DIV, '{32'h7, 32'h2}, 32'h3);
+    $display("Test ECHO with 1 random strings...");
+    random_echo(1);
+    
+    $display("\nTest ADD with 1 random inputs...");
+    random_math(OPCODE_ADD, 1);
+    
+    $display("\nTest MUL with 1 random inputs...");
+    random_math(OPCODE_MUL, 1);
+    
+    $display("\nTest DIV with 1 random inputs...");
+    random_math(OPCODE_DIV, 1);
 
     $finish;
   end
