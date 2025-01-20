@@ -22,7 +22,7 @@ module alu_runner;
   initial begin
     pll_out = 0;
     forever begin
-      #8.333ns;  // 60MHz
+      #16.393ns;  // 30.5MHz
       pll_out = !pll_out;
     end
   end

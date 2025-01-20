@@ -1,7 +1,7 @@
 module alu_runner;
 
   logic clk_i;
-  logic rst_ni;
+  logic rst_ni = 1;
   logic rxd_i;
   logic txd_o;
 
@@ -9,7 +9,7 @@ module alu_runner;
   logic [7:0] data_received_o;
   logic tx_ready_o, tx_valid_i, rx_ready_i, rx_valid_o;
 
-  localparam realtime ClockPeriod = 5ms;
+  localparam realtime ClockPeriod = 41.666ns;  // 12MHz clock
 
   initial begin
     clk_i = 0;
@@ -72,7 +72,6 @@ module alu_runner;
 
     @(posedge clk_i);
     rx_ready_i = 0;
-
   endtask
 
 endmodule

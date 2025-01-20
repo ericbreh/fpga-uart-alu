@@ -79,7 +79,7 @@ clean:
 	rm -rf \
 	 *.memh *.memb \
 	 *sim_dir *gls_dir \
-	 dump.vcd dump.fst \
+	 dump.vcd dump.fst dump.fst.hier\
 	 synth/build \
 	 synth/yosys_generic/build \
 	 synth/icestorm_icebreaker/build \
