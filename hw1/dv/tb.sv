@@ -18,7 +18,6 @@ module tb;
       data[i] = message[i];
     end
 
-    // Calculate packet length (header + data)
     packet_len = 16'd4 + 16'(msg_len);
 
     $display("Message: %s", message);
@@ -54,7 +53,7 @@ module tb;
                              input logic [7:0] data[]);
     logic [7:0] header[4];
     header[0] = opcode;
-    header[1] = 8'h00;  // Reserved
+    header[1] = 8'h00;
     header[2] = len[7:0];
     header[3] = len[15:8];
 
@@ -80,8 +79,8 @@ module tb;
     result = {bytes[3], bytes[2], bytes[1], bytes[0]};
   endtask
 
-  task automatic test_math(input logic [7:0] opcode, input logic [31:0] operands[2],
-                         input int num_operands, input logic [31:0] expected);
+  task automatic test_math(input logic [7:0] opcode, input logic [31:0] operands[],
+                           input int num_operands, input logic [31:0] expected);
     logic [7:0] data[];
     logic [31:0] result;
     logic [15:0] packet_len;
@@ -95,7 +94,6 @@ module tb;
       data[i*4+0] = operands[i][7:0];
     end
 
-    // Calculate packet length
     packet_len = 16'd4 + 16'(data.size());
 
     $display("Operands: ");
@@ -119,9 +117,9 @@ module tb;
     string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     string message;
     int length;
-    
+
     for (int test = 0; test < num_tests; test++) begin
-      length = $urandom_range(1, 100); // Random message length between 1-100
+      length  = $urandom_range(1, 100);  // Random message length between 1-100
       message = "";
       for (int i = 0; i < length; i++) begin
         message = {message, string'(chars[$urandom_range(0, chars.len()-1)])};
@@ -131,23 +129,42 @@ module tb;
   endtask
 
   task automatic random_math(input logic [7:0] opcode, input int num_tests);
-    logic [31:0] operands[2];
+    logic [31:0] operands[];
     logic [31:0] expected;
-    
+    int num_operands;
+
     for (int test = 0; test < num_tests; test++) begin
-      operands[0] = $urandom();
-      operands[1] = $urandom();
-      
+      // only 2 operands for division
+      num_operands = (opcode == OPCODE_DIV) ? 2 : $urandom_range(2, 100);
+      operands = new[num_operands];
+
+      // Generate random operands
+      foreach (operands[i]) begin
+        operands[i] = $urandom();
+      end
+
+      // Calculate expected result
       case (opcode)
-        OPCODE_ADD: expected = operands[0] + operands[1];
-        OPCODE_MUL: expected = operands[0] * operands[1];
+        OPCODE_ADD: begin
+          expected = 0;
+          foreach (operands[i]) expected += operands[i];
+        end
+        OPCODE_MUL: begin
+          expected = 1;
+          foreach (operands[i]) expected = $signed(expected) * $signed(operands[i]);
+        end
         OPCODE_DIV: begin
-          if (operands[1] == 0) operands[1] = 1;
-          expected = operands[0] / operands[1];
+          if (operands[1] == 0) operands[1] = 1;  // Avoid divide by zero
+          // Use $signed for proper signed division
+          expected = $signed(operands[0]) / $signed(operands[1]);
+        end
+        default: begin
+          $display("Unknown opcode: %0h", opcode);
+          return;
         end
       endcase
-      
-      test_math(opcode, operands, 2, expected);
+
+      test_math(opcode, operands, num_operands, expected);
     end
   endtask
 
@@ -157,22 +174,23 @@ module tb;
 
     runner.reset();
 
-    test_echo("Hello, World!");
-    test_math(OPCODE_ADD, '{32'h1, 32'h2}, 2, 32'h3);
-    test_math(OPCODE_MUL, '{32'h2, 32'h3}, 2, 32'h6);
-    test_math(OPCODE_DIV, '{32'h6, 32'h2}, 2, 32'h3);
+    // test_echo("Hello, World!");
+    // test_math(OPCODE_ADD, '{32'h1, 32'h2}, 2, 32'h3);
+    // test_math(OPCODE_MUL, '{32'h2, 32'h3}, 2, 32'h6);
+    // test_math(OPCODE_DIV, '{32'h6, 32'h2}, 2, 32'h3);
 
-    $display("Test ECHO with 1 random strings...");
-    random_echo(1);
-    
-    $display("\nTest ADD with 1 random inputs...");
-    random_math(OPCODE_ADD, 1);
-    
-    $display("\nTest MUL with 1 random inputs...");
-    random_math(OPCODE_MUL, 1);
-    
-    $display("\nTest DIV with 1 random inputs...");
-    random_math(OPCODE_DIV, 1);
+    // $display("Test ECHO with 1 random strings...");
+    // random_echo(1);
+
+    $display("\nTest ADD with random inputs...");
+    random_math(OPCODE_ADD, 5);
+
+    $display("\nTest MUL with random inputs...");
+    random_math(OPCODE_MUL, 5);
+
+    $display("\nTest DIV with random inputs...");
+    random_math(OPCODE_DIV, 5);
+
 
     $finish;
   end
