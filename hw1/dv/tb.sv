@@ -3,6 +3,9 @@ module tb;
   import dv_pkg::*;
   ;
   parameter int NUM_TESTS = 5;
+  parameter int MAX_ECHO = 100;
+  parameter int MAX_OPERANDS = 100;
+
   alu_runner runner ();
 
   task automatic test_echo(input string message);
@@ -119,7 +122,7 @@ module tb;
     int length;
 
     for (int test = 0; test < num_tests; test++) begin
-      length  = $urandom_range(1, 100);  // Random message length between 1-100
+      length  = $urandom_range(1, MAX_ECHO);
       message = "";
       for (int i = 0; i < length; i++) begin
         message = {message, string'(chars[$urandom_range(0, chars.len()-1)])};
@@ -135,7 +138,7 @@ module tb;
 
     for (int test = 0; test < num_tests; test++) begin
       // only 2 operands for division
-      num_operands = (opcode == OPCODE_DIV) ? 2 : $urandom_range(2, 100);
+      num_operands = (opcode == OPCODE_DIV) ? 2 : $urandom_range(2, MAX_OPERANDS);
       operands = new[num_operands];
 
       // Generate random operands
@@ -174,17 +177,17 @@ module tb;
 
     runner.reset();
 
-    $display("Test ECHO with random strings...");
-    random_echo(NUM_TESTS);
+        $display("Test ECHO with random strings...");
+        random_echo(NUM_TESTS);
 
-    $display("\nTest ADD with random inputs...");
-    random_math(OPCODE_ADD, NUM_TESTS);
+        $display("\nTest ADD with random inputs...");
+        random_math(OPCODE_ADD, NUM_TESTS);
 
-    $display("\nTest MUL with random inputs...");
-    random_math(OPCODE_MUL, NUM_TESTS);
+        $display("\nTest MUL with random inputs...");
+        random_math(OPCODE_MUL, NUM_TESTS);
 
-    $display("\nTest DIV with random inputs...");
-    random_math(OPCODE_DIV, NUM_TESTS);
+        $display("\nTest DIV with random inputs...");
+        random_math(OPCODE_DIV, NUM_TESTS);
 
     $finish;
   end
