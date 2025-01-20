@@ -197,7 +197,7 @@ module alu
       end
 
       RX_NUMBER: begin
-        my_rst_ni = 0;
+        my_rst_ni = 0; // not sure why these need to be reset
 
         if (rx_valid_o) begin
           byte_counter_d = byte_counter_q + 1;

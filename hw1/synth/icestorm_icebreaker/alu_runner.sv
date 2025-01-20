@@ -10,6 +10,7 @@ module alu_runner;
   logic [7:0] data_received_o;
   logic tx_ready_o, tx_valid_i, rx_ready_i, rx_valid_o;
   logic rst_ni = 1;
+  
   initial begin
     CLK = 0;
     forever begin

@@ -2,6 +2,7 @@ module tb;
   import config_pkg::*;
   import dv_pkg::*;
   ;
+  parameter int NUM_TESTS = 5;
   alu_runner runner ();
 
   task automatic test_echo(input string message);
@@ -96,17 +97,16 @@ module tb;
 
     packet_len = 16'd4 + 16'(data.size());
 
-    $display("Operands: ");
-    for (int i = 0; i < num_operands; i++)
-      $display("[%0d] = %0d (0x%0h)", i, $signed(operands[i]), operands[i]);
+    // $display("Operands: ");
+    // for (int i = 0; i < num_operands; i++)
+    //   $display("[%0d] = %0d (0x%0h)", i, $signed(operands[i]), operands[i]);
     $display("Expected: %0d (0x%0h)", $signed(expected), expected);
 
     send_packet(opcode, packet_len, data);
     receive_result(result);
 
-    $display("Received: %0d (0x%0h)", $signed(result), result);
-
     if (result !== expected) begin
+      $display("Received: %0d (0x%0h)", $signed(result), result);
       $display("FAIL");
     end else begin
       $display("PASS");
@@ -174,23 +174,17 @@ module tb;
 
     runner.reset();
 
-    // test_echo("Hello, World!");
-    // test_math(OPCODE_ADD, '{32'h1, 32'h2}, 2, 32'h3);
-    // test_math(OPCODE_MUL, '{32'h2, 32'h3}, 2, 32'h6);
-    // test_math(OPCODE_DIV, '{32'h6, 32'h2}, 2, 32'h3);
-
-    // $display("Test ECHO with 1 random strings...");
-    // random_echo(1);
+    $display("Test ECHO with random strings...");
+    random_echo(NUM_TESTS);
 
     $display("\nTest ADD with random inputs...");
-    random_math(OPCODE_ADD, 5);
+    random_math(OPCODE_ADD, NUM_TESTS);
 
     $display("\nTest MUL with random inputs...");
-    random_math(OPCODE_MUL, 5);
+    random_math(OPCODE_MUL, NUM_TESTS);
 
     $display("\nTest DIV with random inputs...");
-    random_math(OPCODE_DIV, 5);
-
+    random_math(OPCODE_DIV, NUM_TESTS);
 
     $finish;
   end

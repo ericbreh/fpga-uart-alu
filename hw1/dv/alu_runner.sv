@@ -9,12 +9,10 @@ module alu_runner;
   logic [7:0] data_received_o;
   logic tx_ready_o, tx_valid_i, rx_ready_i, rx_valid_o;
 
-  localparam realtime ClockPeriod = 41.666ns;  // 12MHz clock
-
   initial begin
     clk_i = 0;
     forever begin
-      #(ClockPeriod / 2);
+      #16.393ns;  // 30.5MHz
       clk_i = !clk_i;
     end
   end

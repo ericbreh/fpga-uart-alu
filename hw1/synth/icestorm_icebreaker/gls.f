@@ -14,5 +14,3 @@ ${UART_DIR}/rtl/uart.v
 -I${BASEJUMP_STL_DIR}/bsg_misc
 ${BASEJUMP_STL_DIR}/bsg_misc/bsg_imul_iterative.sv
 ${BASEJUMP_STL_DIR}/bsg_misc/bsg_idiv_iterative.sv
-${BASEJUMP_STL_DIR}/bsg_misc/bsg_idiv_iterative_controller.sv
-${BASEJUMP_STL_DIR}/bsg_misc/bsg_mux_one_hot.sv
