@@ -25,7 +25,7 @@ class ALU:
             packet_len & 0xFF,
             packet_len >> 8
         ])
-        print(f"Packet: {header.hex() + data.hex()}")
+        # print(f"Packet: {header.hex() + data.hex()}")
         return header + data
 
     def echo(self, data: str):
