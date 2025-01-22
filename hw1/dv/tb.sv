@@ -171,23 +171,28 @@ module tb;
     end
   endtask
 
-  initial begin
+  always begin
     $dumpfile("dump.fst");
     $dumpvars;
+    $display("Begin simulation.");
+    $urandom(100);
+    $timeformat(-3, 3, "ms", 0);
 
     runner.reset();
 
-        $display("Test ECHO with random strings...");
-        random_echo(NUM_TESTS);
+    // test_math(OPCODE_ADD, '{32'h1, 32'h2}, 2, 32'h3);
 
-        $display("\nTest ADD with random inputs...");
-        random_math(OPCODE_ADD, NUM_TESTS);
+    $display("Test ECHO with random strings...");
+    random_echo(NUM_TESTS);
 
-        $display("\nTest MUL with random inputs...");
-        random_math(OPCODE_MUL, NUM_TESTS);
+    $display("\nTest ADD with random inputs...");
+    random_math(OPCODE_ADD, NUM_TESTS);
 
-        $display("\nTest DIV with random inputs...");
-        random_math(OPCODE_DIV, NUM_TESTS);
+    $display("\nTest MUL with random inputs...");
+    random_math(OPCODE_MUL, NUM_TESTS);
+
+    $display("\nTest DIV with random inputs...");
+    random_math(OPCODE_DIV, NUM_TESTS);
 
     $finish;
   end

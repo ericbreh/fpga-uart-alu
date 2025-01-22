@@ -10,7 +10,7 @@ module alu_runner;
   logic [7:0] data_received_o;
   logic tx_ready_o, tx_valid_i, rx_ready_i, rx_valid_o;
   logic rst_ni = 1;
-  
+
   initial begin
     CLK = 0;
     forever begin
@@ -60,26 +60,26 @@ module alu_runner;
   );
 
   task automatic reset;
-    BTN_N = 0;
+    BTN_N <= 0;
     @(posedge CLK);
-    BTN_N = 1;
+    BTN_N <= 1;
   endtask
 
   task automatic send(input logic [7:0] data);
-    @(posedge CLK);
     while (!tx_ready_o) @(posedge CLK);
-    data_to_send_i = data;
-    tx_valid_i = 1;
+    data_to_send_i <= data;
+    tx_valid_i <= 1;
     @(posedge CLK);
-    tx_valid_i = 0;
+    tx_valid_i <= 0;
   endtask
 
   task automatic receive(output logic [7:0] data);
     while (!rx_valid_o) @(posedge CLK);
-    rx_ready_i = 1;
+    rx_ready_i <= 1;
     data = data_received_o;
     @(posedge CLK);
-    rx_ready_i = 0;
+    rx_ready_i <= 0;
+    @(posedge CLK);
   endtask
 
 endmodule

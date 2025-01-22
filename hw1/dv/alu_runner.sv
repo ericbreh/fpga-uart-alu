@@ -1,7 +1,7 @@
 module alu_runner;
 
   logic clk_i;
-  logic rst_ni = 1;
+  logic rst_ni;
   logic rxd_i;
   logic txd_o;
 
@@ -9,10 +9,12 @@ module alu_runner;
   logic [7:0] data_received_o;
   logic tx_ready_o, tx_valid_i, rx_ready_i, rx_valid_o;
 
+  localparam realtime ClockPeriod = 32.786ns;
+
   initial begin
     clk_i = 0;
     forever begin
-      #16.393ns;  // 30.5MHz
+      #(ClockPeriod / 2);
       clk_i = !clk_i;
     end
   end
@@ -48,26 +50,28 @@ module alu_runner;
   );
 
   task automatic reset;
-    rst_ni = 0;
+    rst_ni <= 0;
     @(posedge clk_i);
-    rst_ni = 1;
+    rst_ni <= 1;
   endtask
 
   task automatic send(input logic [7:0] data);
     @(posedge clk_i);
     while (!tx_ready_o) @(posedge clk_i);
-    data_to_send_i = data;
-    tx_valid_i = 1;
+    data_to_send_i <= data;
+    tx_valid_i <= 1;
     @(posedge clk_i);
-    tx_valid_i = 0;
+    tx_valid_i <= 0;
   endtask
+
 
   task automatic receive(output logic [7:0] data);
     while (!rx_valid_o) @(posedge clk_i);
-    rx_ready_i = 1;
+    rx_ready_i <= 1;
     data = data_received_o;
     @(posedge clk_i);
-    rx_ready_i = 0;
+    rx_ready_i <= 0;
+    @(posedge clk_i);
   endtask
 
 endmodule
