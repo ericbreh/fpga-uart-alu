@@ -1,9 +1,0 @@
-[submodule "hw1/third_party/basejump_stl"]
-	path = hw1/third_party/basejump_stl
-	url = git@github.com:bespoke-silicon-group/basejump_stl.git
-[submodule "hw1/third_party/alexforencich_uart"]
-	path = hw1/third_party/alexforencich_uart
-	url = git@github.com:alexforencich/verilog-uart.git
-[submodule "hw1/third_party/fpnew"]
-	path = hw1/third_party/fpnew
-	url = git@github.com:openhwgroup/cvfpu.git
