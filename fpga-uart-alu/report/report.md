@@ -1,5 +1,7 @@
 # FPGA UART ALU
 
+[Link to GitHub Repo](https://github.com/ericbreh/verilog-project-to-silicon/tree/main/fpga-uart-alu)
+
 ## Step 1 -- UART Echo
 
 ### 1.3
