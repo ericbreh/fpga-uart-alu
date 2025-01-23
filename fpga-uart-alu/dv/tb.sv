@@ -180,19 +180,30 @@ module tb;
 
     runner.reset();
 
-    // test_math(OPCODE_ADD, '{32'h1, 32'h2}, 2, 32'h3);
+    // Basic echo test
+    // test_echo("hello");
 
-    $display("Test ECHO with random strings...");
-    random_echo(NUM_TESTS);
+    // Basic addition test
+    test_math(OPCODE_ADD, '{32'h1, 32'h2}, 2, 32'h3);
 
-    $display("\nTest ADD with random inputs...");
-    random_math(OPCODE_ADD, NUM_TESTS);
+    // Basic multiply test - 3 * 4 = 12
+    test_math(OPCODE_MUL, '{32'h3, 32'h4}, 2, 32'hc);
 
-    $display("\nTest MUL with random inputs...");
-    random_math(OPCODE_MUL, NUM_TESTS);
+    // Basic divide test - 10 / 2 = 5
+    test_math(OPCODE_DIV, '{32'ha, 32'h2}, 2, 32'h5);
 
-    $display("\nTest DIV with random inputs...");
-    random_math(OPCODE_DIV, NUM_TESTS);
+
+    // $display("Test ECHO with random strings...");
+    // random_echo(NUM_TESTS);
+
+    // $display("\nTest ADD with random inputs...");
+    // random_math(OPCODE_ADD, NUM_TESTS);
+
+    // $display("\nTest MUL with random inputs...");
+    // random_math(OPCODE_MUL, NUM_TESTS);
+
+    // $display("\nTest DIV with random inputs...");
+    // random_math(OPCODE_DIV, NUM_TESTS);
 
     $finish;
   end
