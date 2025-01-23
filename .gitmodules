@@ -1,0 +1,9 @@
+[submodule "fpga-uart-alu/third_party/basejump_stl"]
+	path = fpga-uart-alu/third_party/basejump_stl
+	url = git@github.com:bespoke-silicon-group/basejump_stl.git
+[submodule "fpga-uart-alu/third_party/alexforencich_uart"]
+	path = fpga-uart-alu/third_party/alexforencich_uart
+	url = git@github.com:alexforencich/verilog-uart.git
+[submodule "fpga-uart-alu/third_party/fpnew"]
+	path = fpga-uart-alu/third_party/fpnew
+	url = git@github.com:openhwgroup/cvfpu.git
