@@ -7,3 +7,6 @@
 [submodule "fpga-uart-alu/third_party/fpnew"]
 	path = fpga-uart-alu/third_party/fpnew
 	url = git@github.com:openhwgroup/cvfpu.git
+[submodule "cse293-final-project"]
+	path = cse293-final-project
+	url = git@github.com:nunibye/cse293-final-project.git
