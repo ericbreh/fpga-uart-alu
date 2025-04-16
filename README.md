@@ -1,6 +1,8 @@
 # FPGA UART ALU
 
-An FPGA-based Arithmetic Logic Unit implementation with UART communication interface. This project enables performing arithmetic operations by sending commands over UART from a computer to an FPGA board.
+Verilog UART controlled ALU implementation.
+
+This project enables performing arithmetic operations by sending commands over UART from a computer to an FPGA board.
 
 ## Features
 
